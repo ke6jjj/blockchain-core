@@ -32,7 +32,7 @@
     has_witness/4,
     clear_witnesses/1,
     remove_witness/2,
-    witnesses/3,
+    witnesses/1, witnesses/3,
     witnesses_plain/1,
     witness_hist/1, witness_recent_time/1, witness_first_time/1,
     oui/1, oui/2,
@@ -543,9 +543,13 @@ has_witness(GatewayBin, Gateway, WitnessAddr, Ledger) ->
         _ -> true
     end.
 
+-spec witnesses(gateway()) -> #{libp2p_crypto:pubkey_bin() => gateway_witness()}.
+witnesses(Gateway) ->
+    maps:from_list(Gateway#gateway_v2.witnesses).
+
 -spec witnesses(libp2p_crypto:pubkey_bin(), gateway(), blockchain_ledger_v1:ledger()) -> #{libp2p_crypto:pubkey_bin() => gateway_witness()}.
 witnesses(GatewayBin, Gateway, Ledger) ->
-    purge_stale_witnesses(GatewayBin, Gateway, Ledger).
+    maps:from_list(purge_stale_witnesses(GatewayBin, Gateway, Ledger)).
 
 -spec witnesses_plain(gateway()) -> [{libp2p_crypto:pubkey_bin(), gateway_witness()}].
 witnesses_plain(Gateway) ->
@@ -687,7 +691,7 @@ mask_for_gateway_mode(#gateway_v2{mode = full}, Ledger)->
         {ok, V} -> V
     end.
 
--spec purge_stale_witnesses(libp2p_crypto:pubkey_bin(), gateway(), blockchain_ledger_v2:ledger()) -> #{libp2p_crypto:pubkey_bin() => gateway_witness()}.
+-spec purge_stale_witnesses(libp2p_crypto:pubkey_bin(), gateway(), blockchain_ledger_v2:ledger()) -> [{libp2p_crypto:pubkey_bin(), gateway_witness()}].
 purge_stale_witnesses(_GatewayBin, _Gateway = #gateway_v2{witnesses = Witnesses, last_location_nonce = undefined}, _Ledger)->
     %% last_location_nonce not yet set, so we must not have reasserted location since this purge fix went in
     %% so nothing gets purged, we return all current witnesses
@@ -820,7 +824,7 @@ purge_witnesses_test() ->
     GW3 = add_witness(<<"witness1">>, FakeWitnessGW, undefined, undefined, GW2),
     GW4 = add_witness(<<"witness2">>, FakeWitnessGW, undefined, undefined, GW3),
     Witnesses = witnesses(<<"challengee_address1">>, GW4, fake_ledger),
-    ?assertEqual(2,length(Witnesses)),
+    ?assertEqual(2,maps:size(Witnesses)),
 
 
     %% set the challengee last location nonce to 1, the witnesses challengee_location_nonce is also 1
@@ -831,7 +835,7 @@ purge_witnesses_test() ->
     GW3A = add_witness(<<"witness1">>, FakeWitnessGW, undefined, undefined, GW2A),
     GW4A = add_witness(<<"witness2">>, FakeWitnessGW, undefined, undefined, GW3A),
     WitnessesA = witnesses(<<"challengee_address1">>, GW4A, fake_ledger),
-    ?assertEqual(2, length(WitnessesA)),
+    ?assertEqual(2, maps:size(WitnessesA)),
 
     %% set the challengee last location nonce to 2, the witnesses challengee_location_nonce remains at 1
     %% this replicates the scenario whereby a challengee GW HAS re asserted its location since
@@ -841,9 +845,8 @@ purge_witnesses_test() ->
     GW2B = GW4A#gateway_v2{last_location_nonce = 2},
     GW3B = add_witness(<<"witness3">>, FakeWitnessGW, undefined, undefined, GW2B),
     WitnessesB = witnesses(<<"challengee_address1">>, GW3B, fake_ledger),
-    ?assertEqual(1, length(WitnessesB)),
-    {WitnessBAddr, _WitnessB} = hd(WitnessesB),
-    ?assertEqual(<<"witness3">>, WitnessBAddr),
+    ?assertEqual(1, maps:size(WitnessesB)),
+    ?assert(maps:is_key(<<"witness3">>, WitnessesB)),
     meck:unload(blockchain_ledger_v1).
 
 fake_config() ->

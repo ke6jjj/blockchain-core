@@ -1820,7 +1820,7 @@ insert_witnesses(PubkeyBin, Witnesses, Ledger) ->
                                               WitnessPubkeyBin = blockchain_poc_witness_v1:gateway(POCWitness),
                                               case ?MODULE:find_gateway_info(WitnessPubkeyBin, Ledger) of
                                                   {ok, WitnessGw} ->
-                                                      blockchain_ledger_gateway_v2:add_witness({poc_witness, WitnessPubkeyBin, WitnessGw, POCWitness, GW});
+                                                        blockchain_ledger_gateway_v2:add_witness({poc_witness, WitnessPubkeyBin, WitnessGw, POCWitness, GW});
                                                   {error, Reason} ->
                                                       lager:warning("exiting trying to add witness", [Reason]),
                                                       erlang:error({insert_witnesses_error, Reason})
