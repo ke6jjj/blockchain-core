@@ -63,7 +63,6 @@
 -record(gateway_v2, {
     owner_address :: libp2p_crypto:pubkey_bin(),
     location :: undefined | pos_integer(),
-    last_location_nonce :: undefined | non_neg_integer(),       %% the value of the GW nonce at the time of the last location assertion
     alpha = 1.0 :: float(),
     beta = 1.0 :: float(),
     delta :: non_neg_integer(),
@@ -76,7 +75,8 @@
     oui = undefined :: undefined | pos_integer(),
     gain = ?DEFAULT_GAIN :: integer(),
     elevation = ?DEFAULT_ELEVATION :: integer(),
-    mode = full :: mode()
+    mode = full :: mode(),
+    last_location_nonce :: undefined | non_neg_integer()       %% the value of the GW nonce at the time of the last location assertion
 }).
 
 -type gateway() :: #gateway_v2{}.
@@ -607,18 +607,25 @@ deserialize(<<2, Bin/binary>>) ->
             12 ->
                 L = tuple_to_list(Gw),
                 %% add an undefined OUI slot
-                %% and add defaults for gain, elevation and mode
-                L1 = lists:append(L, [undefined, ?DEFAULT_GAIN, ?DEFAULT_ELEVATION, full]),
+                %% and add defaults for gain, elevation,  mode and last_location_nonce
+                L1 = lists:append(L, [undefined, ?DEFAULT_GAIN, ?DEFAULT_ELEVATION, full, undefined]),
                 G1 = list_to_tuple(L1),
                 neighbors([], G1);
             13 ->
-                %% pre gain, elevation, mode update
+                %% pre gain, elevation, mode update and last_location_nonce
                 L = tuple_to_list(Gw),
                 %% add defaults for gain, elevation and mode
-                L1 = lists:append(L, [?DEFAULT_GAIN, ?DEFAULT_ELEVATION, full]),
+                L1 = lists:append(L, [?DEFAULT_GAIN, ?DEFAULT_ELEVATION, full, undefined]),
                 list_to_tuple(L1);
             16 ->
+                %% pre last_location_nonce
+                L = tuple_to_list(Gw),
+                %% add default last_location_nonce
+                L1 = lists:append(L, [undefined]),
+                list_to_tuple(L1);
+            17 ->
                 Gw
+
         end,
     Neighbors = neighbors(Gw1),
     Gw2 = neighbors(lists:usort(Neighbors), Gw1),
