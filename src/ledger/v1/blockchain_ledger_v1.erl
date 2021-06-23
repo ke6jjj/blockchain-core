@@ -1627,12 +1627,9 @@ add_gateway_location(GatewayAddress, Location, Nonce, Ledger) ->
             Gw1 = blockchain_ledger_gateway_v2:location(Location, Gw),
             Gw2 = blockchain_ledger_gateway_v2:nonce(Nonce, Gw1),
             Gw3 = blockchain_ledger_gateway_v2:last_location_nonce(Nonce, Gw2),
-            NewGw = blockchain_ledger_gateway_v2:set_alpha_beta_delta(1.0, 1.0, Height, Gw3),
-            update_gateway(NewGw, GatewayAddress, Ledger),
-            %% we need to clear all our old witnesses out
-            Bin = blockchain_ledger_gateway_v2:serialize(blockchain_ledger_gateway_v2:clear_witnesses(NewGw)),
-            AGwsCF = active_gateways_cf(Ledger),
-            cache_put(Ledger, AGwsCF, GatewayAddress, Bin)
+            Gw4 = blockchain_ledger_gateway_v2:set_alpha_beta_delta(1.0, 1.0, Height, Gw3),
+            NewGw = blockchain_ledger_gateway_v2:clear_witnesses(Gw4),
+            update_gateway(NewGw, GatewayAddress, Ledger)
     end.
 
 -spec add_gateway_gain(libp2p_crypto:pubkey_bin(), integer(), non_neg_integer(), ledger()) -> ok | {error, no_active_gateway}.
