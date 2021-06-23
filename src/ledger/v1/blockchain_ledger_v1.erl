@@ -1628,6 +1628,7 @@ add_gateway_location(GatewayAddress, Location, Nonce, Ledger) ->
             Gw2 = blockchain_ledger_gateway_v2:nonce(Nonce, Gw1),
             Gw3 = blockchain_ledger_gateway_v2:last_location_nonce(Nonce, Gw2),
             NewGw = blockchain_ledger_gateway_v2:set_alpha_beta_delta(1.0, 1.0, Height, Gw3),
+            update_gateway(NewGw, GatewayAddress, Ledger),
             %% we need to clear all our old witnesses out
             Bin = blockchain_ledger_gateway_v2:serialize(blockchain_ledger_gateway_v2:clear_witnesses(NewGw)),
             AGwsCF = active_gateways_cf(Ledger),

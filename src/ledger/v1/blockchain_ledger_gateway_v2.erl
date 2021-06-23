@@ -643,7 +643,26 @@ deserialize(<<2, Bin/binary>>) ->
             false ->
                 Witnesses
         end,
-    Gw2#gateway_v2{witnesses = Witnesses1}.
+
+    Witnesses2 =
+        case length(Witnesses1) > 0 of
+            true ->
+                case length(hd(Witnesses1)) of
+                    7 ->
+                        %% pre challengee_location_nonce upgrade
+                        lists:sort(lists:foldl(
+                            fun(Witness, Acc) ->
+                                WL = tuple_to_list(Witness),
+                                WL1 = lists:append(WL, [undefined]),
+                                [list_to_tuple(WL1) | Acc]
+                            end, [], Witnesses1));
+                    8 ->
+                        Witnesses1
+                end;
+            false ->
+                Witnesses1
+        end,
+    Gw2#gateway_v2{witnesses = Witnesses2}.
 
 %% OK to include here, v1 should now be immutable.
 -record(gateway_v1, {
