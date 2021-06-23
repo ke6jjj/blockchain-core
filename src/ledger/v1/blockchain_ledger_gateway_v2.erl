@@ -647,14 +647,15 @@ deserialize(<<2, Bin/binary>>) ->
     Witnesses2 =
         case length(Witnesses1) > 0 of
             true ->
-                case length(hd(Witnesses1)) of
+                {_, Witness1} = hd(Witnesses1),
+                case size(Witness1) of
                     7 ->
                         %% pre challengee_location_nonce upgrade
                         lists:sort(lists:foldl(
-                            fun(Witness, Acc) ->
+                            fun({Addr, Witness}, Acc) ->
                                 WL = tuple_to_list(Witness),
                                 WL1 = lists:append(WL, [undefined]),
-                                [list_to_tuple(WL1) | Acc]
+                                [{Addr, list_to_tuple(WL1)} | Acc]
                             end, [], Witnesses1));
                     8 ->
                         Witnesses1
