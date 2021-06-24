@@ -12,6 +12,8 @@
     stake_fail_not_enough_hnt/1,
     stake_fail_incorrect_stake/1,
     stake_fail_validator_already_exists/1,
+    stake_fail_validator_key_corrupt/1,
+    stake_fail_validator_key_network_mismatch/1,
     unstake_ok/1,
     unstake_fail_unstake_in_consensus/1,
     unstake_fail_not_owner/1,
@@ -200,15 +202,22 @@ stake_fail_incorrect_stake(Config) ->
         {error, {incorrect_stake, _}} -> ok
     end.
 
-stake_fail_validator_already_exists(Config) ->
+stake_fail_validator_key_corrupt(Config) ->
     Chain = ?config(chain, Config),
 
     [{OwnerPubkeyBin, {_OwnerPub, _OwnerPriv, OwnerSigFun}} | _] = ?config(genesis_members, Config),
 
+    %% make a validator
+    [{StakePubkeyBin, {_StakePub, _StakePriv, _StakeSigFun}}] = test_utils:generate_keys(1),
+
+    %% Drop a byte from the key
+    <<_:1/binary, StakePubKeyBinCorrupt/binary>> = StakePubKeyBin,
+    ct:pal("Corrupted StakePubkeyBin: ~p~nOwnerPubkeyBin: ~p", [StakePubkeyBinCorrupt, OwnerPubkeyBin]),
+
     Txn = blockchain_txn_stake_validator_v1:new(
+        StakePubkeyBinCorrupt,
         OwnerPubkeyBin,
-        OwnerPubkeyBin,
-        ?bones(9999),
+        ?bones(10000),
         ?bones(5)
     ),
     SignedTxn = blockchain_txn_stake_validator_v1:sign(Txn, OwnerSigFun),
@@ -216,8 +225,8 @@ stake_fail_validator_already_exists(Config) ->
 
     ?assert(blockchain_txn_stake_validator_v1:is_valid_owner(SignedTxn)),
     case blockchain_txn_stake_validator_v1:is_valid(SignedTxn, Chain) of
-        ok -> ct:fail("got ok, expected an reused_miner_key error", []);
-        {error, validator_already_exists} -> ok
+        ok -> ct:fail("got ok, expected an incorrect_stake error", []);
+        {error, {unusable_miner_key, _}} -> ok
     end.
 
 unstake_ok(Config) ->
