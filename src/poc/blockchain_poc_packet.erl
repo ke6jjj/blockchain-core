@@ -71,6 +71,9 @@ decrypt(<<IV0:16/integer-unsigned-little, OnionCompactKey:33/binary, Tag:4/binar
             end
     catch error:enotsup ->
               %% corrupted or invalid key
+              error;
+          incompatible_key:_ ->
+              %% different key spaces (eg. compact vs ed25519)
               error
     end.
 
